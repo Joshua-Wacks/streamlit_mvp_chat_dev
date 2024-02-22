@@ -10,9 +10,6 @@ from io import BytesIO
 
 from azure.storage.blob import ContainerClient
 
-from dotenv import load_dotenv
-load_dotenv()
-
 def allowSelfSignedHttps(allowed):
     # bypass the server certificate verification on client side
     if allowed and not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None):
