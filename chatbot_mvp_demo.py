@@ -236,7 +236,11 @@ def react_to_message():
         
         # print(result)
         response = result['response']
-        sources = result['sources']
+
+        if "sources" in result:
+            sources = result['sources']
+        else:
+            sources = []
  
         
             # source_message = response + '\n'
