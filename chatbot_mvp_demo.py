@@ -100,7 +100,7 @@ def setup():
         st.session_state.faq_container_client = container_client
     
     st.title('Bank Bot Chat Dev')
-    welcome_msg = "Hello 👋 I am your Discovery Bank chatbot that is able to assist you with queries regarding Discovery Bank."
+    welcome_msg = "Hello 👋 I am your Bank chatbot that is able to assist you with queries regarding Discovery Bank."
     with st.chat_message("assistant", avatar=getUserIcon("assistant")):
         st.markdown(welcome_msg)
     
