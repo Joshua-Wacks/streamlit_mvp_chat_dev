@@ -231,7 +231,7 @@ def react_to_message():
         
         st.session_state.query_running = True
         
-        result = query_rag_pipeline(prompt,st.session_state.chat_context,new_context = new_chat_context)
+        result = query_decision_engine(prompt,st.session_state.chat_context,new_context = new_chat_context)
         st.session_state.query_running = False
         
         # print(result)
