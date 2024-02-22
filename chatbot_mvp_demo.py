@@ -54,9 +54,9 @@ def getUserIcon(role):
   </g>
 </svg>"""
         
-def query_rag_pipeline(query,session_messages,new_context = False):
+def query_decision_engine(query,session_messages,new_context = False):
     data = {
-        "query": query,
+        "text": query,
         "conv_history": session_messages,
         "new_context": new_context
     }
@@ -71,7 +71,7 @@ def query_rag_pipeline(query,session_messages,new_context = False):
 
     # The azureml-model-deployment header will force the request to go to a specific deployment.
     # Remove this header to have the request observe the endpoint traffic rules
-    headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'zephyr-7b-beta-1' }
+    headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'decision-engine' }
 
     req = urllib.request.Request(url, body, headers)
 
