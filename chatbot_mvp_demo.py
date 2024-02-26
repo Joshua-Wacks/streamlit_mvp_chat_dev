@@ -7,6 +7,8 @@ import ssl
 import numpy as np
 from PIL import Image
 from io import BytesIO
+import io
+
 
 from azure.storage.blob import ContainerClient
 
@@ -54,9 +56,9 @@ def getUserIcon(role):
   </g>
 </svg>"""
         
-def query_rag_pipeline(query,session_messages,new_context = False):
+def query_decision_engine(query,session_messages,new_context = False):
     data = {
-        "query": query,
+        "text": query,
         "conv_history": session_messages,
         "new_context": new_context
     }
@@ -71,7 +73,7 @@ def query_rag_pipeline(query,session_messages,new_context = False):
 
     # The azureml-model-deployment header will force the request to go to a specific deployment.
     # Remove this header to have the request observe the endpoint traffic rules
-    headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'zephyr-7b-beta-1' }
+    headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'decision-engine' }
 
     req = urllib.request.Request(url, body, headers)
 
@@ -88,7 +90,6 @@ def query_rag_pipeline(query,session_messages,new_context = False):
         print(error.info())
         print(error.read().decode("utf8", 'ignore'))
     
-    st.session_state.query_running = False
     return jsonResponse
             
 def setup():
@@ -102,7 +103,7 @@ def setup():
         container_client = ContainerClient(os.environ['AZURE_BLOB_ACCOUNT_URL'],os.environ['AZURE_BLOB_TEXT_CONTAINER'],os.environ['AZURE_BLOB_KEY'])
         st.session_state.faq_container_client = container_client
     
-    st.title('Bank Bot Chat Dev')
+    st.title('Discovery Bot Chat Demo')
     welcome_msg = "Hello 👋 I am your Discovery Bank chatbot that is able to assist you with queries regarding Discovery Bank."
     with st.chat_message("assistant", avatar=getUserIcon("assistant")):
         st.markdown(welcome_msg)
@@ -185,10 +186,10 @@ def get_image_data(file_path):
     download_stream = st.session_state.container_client.download_blob(blob_name)
     blob_bytes = download_stream.readall()
 
-    with open(file_path_parts[2], "wb") as file:
-        file.write(blob_bytes)
+    # with open(file_path_parts[2], "wb") as file:
+    #     file.write(blob_bytes)
         
-    image = Image.open(file_path_parts[2])
+    image = Image.open(io.BytesIO(blob_bytes))
 
     buf = BytesIO()
     image.save(buf, format="JPEG")
@@ -197,28 +198,20 @@ def get_image_data(file_path):
     return byte_im
 
 def get_faq_data():
-    faq_file_path = './faq_blob_download.txt'
-    
-    if "faqs_read" not in st.session_state:
-        st.session_state.faqs_read = True
 
-        container_client = st.session_state.faq_container_client
-        blob_generator = container_client.list_blobs()
-        
-    
-        for blob in blob_generator:
-            with open(file=faq_file_path, mode="wb") as blob_file:
-                print(f"Started downloading {blob}")
-                download_stream = container_client.download_blob(blob)
-                print(f"File downloaded, streaming blob into {faq_file_path}")
-                blob_file.write(download_stream.readall())
+    # if "faqs_read" not in st.session_state:
+    st.session_state.faqs_read = True
 
-    with open(faq_file_path, encoding="utf8") as file:
-        all_faqs= file.readlines()
+    container_client = st.session_state.faq_container_client
+    blob_generator = container_client.list_blobs()
+    all_faqs = ""
 
-    s = "\n".join(all_faqs) 
+    for blob in blob_generator:
+        download_stream = container_client.download_blob(blob)
+        blob_bytes = download_stream.readall()
+        all_faqs = blob_bytes.decode("utf-8")
     
-    return s
+    return all_faqs
 
 
 def react_to_message():
@@ -234,24 +227,27 @@ def react_to_message():
         
         st.session_state.query_running = True
         
-        result = query_rag_pipeline(prompt,st.session_state.chat_context,new_context = new_chat_context)
+        result = query_decision_engine(prompt,st.session_state.chat_context,new_context = new_chat_context)
         st.session_state.query_running = False
         
         # print(result)
         response = result['response']
-        sources = result['sources']
- 
-        
-            # source_message = response + '\n'
 
-        
         with st.chat_message("assistant", avatar=getUserIcon("assistant")):
             st.markdown(response)
             st.session_state.chat_context.append({"role": "assistant", "content": response})
             st.session_state.messages.append({"role": "assistant", "content": response})
 
+            if 'sources' not in result:
+                return
+
+            if isinstance(result['sources'],dict):
+                sources = [result['sources']]
+            else:
+                sources = result['sources']
 
             for source in sources:
+                print(source)
                 source_message = source['text'].encode('ascii', errors='ignore').decode().replace("\\n", "")
             
                 with st.expander("**Source:** " + source['file'].replace("target-dir\\","")):
