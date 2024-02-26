@@ -12,9 +12,6 @@ import io
 
 from azure.storage.blob import ContainerClient
 
-from dotenv import load_dotenv
-load_dotenv()
-
 def allowSelfSignedHttps(allowed):
     # bypass the server certificate verification on client side
     if allowed and not os.environ.get('PYTHONHTTPSVERIFY', '') and getattr(ssl, '_create_unverified_context', None):
@@ -57,7 +54,9 @@ def getUserIcon(role):
 </svg>"""
         
 def query_decision_engine(query,session_messages,new_context = False):
+def query_decision_engine(query,session_messages,new_context = False):
     data = {
+        "text": query,
         "text": query,
         "conv_history": session_messages,
         "new_context": new_context
@@ -73,6 +72,7 @@ def query_decision_engine(query,session_messages,new_context = False):
 
     # The azureml-model-deployment header will force the request to go to a specific deployment.
     # Remove this header to have the request observe the endpoint traffic rules
+    headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'decision-engine' }
     headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'decision-engine' }
 
     req = urllib.request.Request(url, body, headers)
@@ -103,6 +103,8 @@ def setup():
         container_client = ContainerClient(os.environ['AZURE_BLOB_ACCOUNT_URL'],os.environ['AZURE_BLOB_TEXT_CONTAINER'],os.environ['AZURE_BLOB_KEY'])
         st.session_state.faq_container_client = container_client
     
+    st.title('Bank Bot Chat Dev')
+    welcome_msg = "Hello 👋 I am your Bank chatbot that is able to assist you with queries."
     st.title('Discovery Bot Chat Demo')
     welcome_msg = "Hello 👋 I am your Discovery Bank chatbot that is able to assist you with queries regarding Discovery Bank."
     with st.chat_message("assistant", avatar=getUserIcon("assistant")):
@@ -227,6 +229,7 @@ def react_to_message():
         
         st.session_state.query_running = True
         
+        result = query_decision_engine(prompt,st.session_state.chat_context,new_context = new_chat_context)
         result = query_decision_engine(prompt,st.session_state.chat_context,new_context = new_chat_context)
         st.session_state.query_running = False
         
