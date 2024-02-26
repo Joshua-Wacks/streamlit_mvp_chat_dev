@@ -72,8 +72,6 @@ def query_decision_engine(query,session_messages,new_context = False):
     # The azureml-model-deployment header will force the request to go to a specific deployment.
     # Remove this header to have the request observe the endpoint traffic rules
     headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'decision-engine' }
-    headers = {'Content-Type':'application/json', 'Authorization':('Bearer '+ api_key), 'azureml-model-deployment': 'decision-engine' }
-
     req = urllib.request.Request(url, body, headers)
 
     try:
@@ -228,7 +226,6 @@ def react_to_message():
         
         st.session_state.query_running = True
         
-        result = query_decision_engine(prompt,st.session_state.chat_context,new_context = new_chat_context)
         result = query_decision_engine(prompt,st.session_state.chat_context,new_context = new_chat_context)
         st.session_state.query_running = False
         
