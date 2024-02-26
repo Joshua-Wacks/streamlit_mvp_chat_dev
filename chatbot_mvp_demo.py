@@ -54,7 +54,6 @@ def getUserIcon(role):
 </svg>"""
         
 def query_decision_engine(query,session_messages,new_context = False):
-def query_decision_engine(query,session_messages,new_context = False):
     data = {
         "text": query,
         "text": query,
